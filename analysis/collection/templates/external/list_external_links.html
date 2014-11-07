@@ -1,0 +1,59 @@
+{% extends 'base.html' %}
+{% load helper_tags pagination_tags %}
+{% block title %}外部链接{% endblock %}
+{% block sidebar %}
+  {% render_sidebar "data.externallink" %}
+{% endblock %}
+{% block content %}
+  {% autopaginate external_links %}
+  <table class="table table-bordered text-center">
+  <thead>
+    <th>名称</th>
+    <th>创建人</th>
+    <th>组</th>
+    <th>url</th>
+    <th>操作</th>
+  </thead>
+  <tbody>
+    {% for link in external_links %}
+      <tr>
+        <td>
+          <a href="{% url 'show_link' link.id %}">{{ link.name }}</a>
+        </td>
+        <td>
+          {{ link.creator }}
+        </td>
+        <td>
+          {% if link.group %}
+          {{ link.group }}
+          {% else %}
+            -
+          {% endif %}
+        </td>
+        <td>
+          <a href="{% url 'show_link' link.id %}">{{ link.url }}</a>
+        </td>
+        <td>
+          {% if link.creator == user %}
+
+            <div class="btn-group btn-group-sm">
+              <a class="btn btn-default" href="{% url 'edit_link' link.id %}"
+                 title="编辑链接">
+                <i class="fa fa-pencil"></i>
+              </a>
+              <a class="post-link btn btn-danger" href="{% url 'delete_link' link.id %}"
+                 title="删除链接"
+                 data-confirm="确认删除？">
+                <i class="fa fa-trash-o"></i>
+              </a>
+             </div>
+          {% else %}
+              <span class="label label-danger">没有权限</span>
+          {% endif %}
+        </td>
+      </tr>
+    {% endfor %}
+  </tbody>
+  </table>
+  <a class="btn btn-primary btn-sm" href="{% url 'create_links' %}">创建</a>
+{% endblock %}

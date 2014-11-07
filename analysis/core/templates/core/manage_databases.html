@@ -1,0 +1,185 @@
+{% extends 'theme_base.html' %}
+{% load helper_tags %}
+{% load pagination_tags %}
+
+{% block title %} 管理数据库 {% endblock %}
+{% block content_header %} 数据库 {% endblock %}
+
+{% block sidebar %}
+{% render_sidebar 'data.database' %}
+{% endblock %}
+
+{% block content %}
+{% autopaginate databases %}
+
+<table class="table table-bordered">
+  <thead>
+  <tr>
+    <th>数据库</th>
+    <th>类型</th>
+    <th>主机</th>
+    <th>端口</th>
+    <th>用户名</th>
+    <th>用户组</th>
+    <th>创建人</th>
+    <th></th>
+  </tr>
+  </thead>
+  <tbody>
+  {% for db in databases %}
+  <tr>
+    <td>{{ db.name }}</td>
+    <td>{{ db.get_engine_display }}</td>
+    <td>{{ db.host }}</td>
+    <td>{{ db.port }}</td>
+    <td>{{ db.user }}</td>
+    <td>
+      <a href="#manage_database_group-{{ db.id }}" data-toggle="modal"
+         class="pull-right"
+         title="用户组管理">
+        <i class="fa fa-edit"></i>
+      </a>
+      <ul>
+        {% for group in db.groups.all %}
+          <li>
+            {{ group.name }}
+          </li>
+        {% empty %}
+          <li>
+            没有用户组
+          </li>
+        {% endfor %}
+      </ul>
+    </td>
+
+    <td>{{ db.creator }}</td>
+
+    <td>
+      <div class="btn-toolbar ">
+        <div class="btn-group btn-group-sm">
+
+          <a class="btn btn-default" href="{% url 'edit_database' db.id %}"
+             title="编辑数据库">
+            <i class="fa fa-pencil"></i>
+          </a>
+
+          <a class="btn btn-default" href="{% url 'create_view' %}?db={{ db.id }}"
+             title="创建数据视图">
+            <i class="fa fa-bar-chart-o"></i>
+          </a>
+
+          <a class="btn btn-default" href="{% url 'create_job' %}?db={{ db.id }}"
+             title="创建导入程序">
+            <i class="fa fa-truck"></i>
+          </a>
+          <a class="post-link btn btn-danger" href="{% url 'delete_database' db.id %}"
+             title="删除数据库"
+             data-confirm="确认删除？">
+            <i class="fa fa-trash-o"></i>
+          </a>
+        </div>
+      </div>
+    </td>
+  </tr>
+  {% endfor %}
+
+  </tbody>
+</table>
+{% paginate %}
+
+<p>
+  <a class="btn btn-primary" href="#create-modal" data-toggle="modal">添加新的</a>
+</p>
+
+
+<div class="modal fade" id="create-modal">
+  <div class="modal-dialog">
+    <div class="modal-content">
+
+      <form action="{% url 'create_database' %}" method="post" name="databaseForm">
+        {% csrf_token %}
+
+        <div class="modal-header">
+          <button type="button" class="close" data-dismiss="modal"><span aria-hidden="true">&times;</span>
+            <span class="sr-only">Close</span></button>
+
+          <h4 class="modal-title">创建数据库</h4>
+        </div>
+
+        <div class="modal-body">
+          <div class="form-group">
+            <label class="control-label" for="id_host">主机：</label>
+            <input class="form-control" type="text" name="host" placeholder="10.23.22.33" required/>
+          </div>
+
+          <div class="form-group">
+            <label class="control-label" for="id_port">端口：</label>
+            <input class="form-control" type="number" name="port" value="3306" required/>
+          </div>
+
+          <div class="form-group">
+            <label class="control-label" for="id_name">数据库：</label>
+            <input class="form-control" type="text" name="name" required/>
+          </div>
+
+          <div class="form-group">
+            <label class="control-label" for="id_name">用户名：</label>
+            <input class="form-control" type="text" name="user" required/>
+          </div>
+
+          <div class="form-group">
+            <label class="control-label" for="id_name">密码：</label>
+            <input class="form-control" type="password" name="password"/>
+          </div>
+
+
+          <div class="form-group">
+            <label class="control-label" for="id_group">组：</label>
+            <select multiple="multiple" class="form-control" name="groups" id="id_groups" required>
+              {% for group in groups %}
+                <option value="{{ group.id }}">{{ group.name }}</option>
+              {% endfor %}
+            </select>
+            <span class="help-block"> 按下 "Control"，或者在Mac上按 "Command" 来选择多个值。 </span>
+          </div>
+
+        </div>
+
+        <div class="modal-footer">
+          <button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
+          <button class="btn btn-primary" ng-disabled="databaseForm.$invalid">Save</button>
+        </div>
+      </form>
+
+    </div>
+  </div>
+</div>
+
+{% for db in databases %}
+<div class="modal fade" id="manage_database_group-{{db.id}}">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <form action="{%url 'manage_database_group' db.id %}" method="post" name="dbGroupForm{{db.id}}">
+        {% csrf_token %}
+
+        <div class="modal-header">
+          <button type="button" class="close" data-dismiss="modal"><span aria-hidden="true">&times;</span>
+            <span class="sr-only">Close</span></button>
+          <h4 class="modal-title">{{ db.name }} 用户组管理</h4>
+        </div>
+
+        <div class="modal-body">
+          {% get_dbgroup_form db %}
+        </div>
+
+        <div class="modal-footer">
+          <button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
+          <button class="btn btn-primary" ng-disabled="databaseForm.$invalid">Save</button>
+        </div>
+      </form>
+
+    </div>
+  </div>
+</div>
+    {% endfor %}
+{% endblock %}

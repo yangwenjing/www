@@ -1,0 +1,40 @@
+{% extends 'base.html' %}
+{% load helper_tags %}
+
+{% block sidebar %}
+  {% include 'sidebar.html' with tab='database' %}
+{% endblock %}
+
+{% block title %} {% create_or_edit form.instance %}数据库 {% endblock %}
+{% block content_header %} {% create_or_edit form.instance %}数据库 {% endblock %}
+
+{% block content %}
+
+  <div class="box box-primary">
+    <form class="form-horizontal" action="" method="post">
+
+      <div class="box-body">
+        {% include 'form/horizontal_form.html' %}
+
+        <div class="form-group">
+          <label class="control-label col-sm-2 required" for="id_group">组：</label>
+
+          <div class="col-sm-10">
+            <select multiple="multiple" class="form-control" name="groups" id="id_groups" required>
+              {% for group in all_groups %}
+                <option value="{{ group.id }}" {% if group in form.instance.groups.all %}selected{% endif %}>{{ group }}</option>
+              {% endfor %}
+            </select>
+            <span class="help-block"> 按下 "Control"，或者在Mac上按 "Command" 来选择多个值。 </span>
+          </div>
+        </div>
+      </div>
+
+      <div class="box-footer">
+        <div class="col-sm-offset-2">
+          <button class="btn btn-primary">保存</button>
+        </div>
+      </div>
+    </form>
+  </div>
+{% endblock %}

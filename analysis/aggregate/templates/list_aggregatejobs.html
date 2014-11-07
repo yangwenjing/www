@@ -1,0 +1,57 @@
+{% extends 'base.html' %}
+{% load pagination_tags helper_tags %}
+{% block title %}数据聚合{% endblock %}
+{% block sidebar %}
+  {% render_sidebar 'aggregate.list' %}
+{% endblock %}
+{% block content %}
+  {% autopaginate aggregate_jobs %}
+  <table class="table table-bordered text-center">
+    <thead>
+    <th>表名</th>
+    <th>作者</th>
+    <th>数据库</th>
+    <th>内容</th>
+    <th>操作</th>
+    </thead>
+    <tbody>
+{% for job in aggregate_jobs %}
+  <tr>
+  <td>
+    {{ job }}
+  </td>
+  <td>
+    {{ job.creator }}
+  </td>
+  <td>{{ job.database }}</td>
+<td>
+  <ul>
+    <li>时间字段：{{ job.datetime_fields }}</li>
+    <li>聚合维度: {{ job.aggregate_fields }}</li>
+    <li>聚合字段：{{ job.sum_fields }}</li>
+    <li>聚合时间点：{{ job.remain_days }}天前</li>
+  </ul>
+</td>
+  <td>
+     <div class="btn-toolbar ">
+        <div class="btn-group btn-group-sm">
+
+          <a class="btn btn-default" href="{% url 'edit_aggregation' job.id %}"
+             title="编辑聚合任务">
+            <i class="fa fa-pencil"></i>
+          </a>
+          <a class="post-link btn btn-danger" href="{% url 'delete_aggregation' job.id %}"
+             title="删除聚合任务"
+             data-confirm="确认删除？">
+            <i class="fa fa-trash-o"></i>
+          </a>
+        </div>
+      </div>
+  </td>
+  </tr>
+{% endfor %}
+    </tbody>
+  </table>
+
+  <a class="btn btn-primary btn-sm" href="{% url 'create_aggregation' %}">创建</a>
+{% endblock %}

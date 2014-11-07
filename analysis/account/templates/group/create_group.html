@@ -1,0 +1,21 @@
+{% extends 'base.html' %}
+{% block title %}创建组{% endblock %}
+{% block content %}
+  <div class="box box-primary">
+  <form action="{% url 'create_group' %}" name="group_form" method="POST">
+  {% csrf_token %}
+      <div class="box-title">
+        <h4 class="form-group">创建组</h4>
+      </div>
+      <div class="box-body">
+        <div class="form-group">
+          <label class="control-label" for="id_name">组名</label>
+          <input type="text" name="name" class="form-control">
+        </div>
+      </div>
+    <div class="box-footer">
+        <button class="btn btn-primary">保存</button>
+    </div>
+  </form>
+      </div>
+{% endblock %}

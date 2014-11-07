@@ -1,0 +1,53 @@
+{% extends 'base.html' %}
+{% load helper_tags pagination_tags %}
+
+{% block title %} 我的报表 {% endblock %}
+{% block content_header %} 我的报表 {% endblock %}
+
+{% block sidebar %}
+  {% render_sidebar 'reports' %}
+{% endblock %}
+
+{% block content %}
+
+  {% autopaginate reports %}
+
+  {% if reports %}
+    <table class="table table-bordered">
+      <tbody>
+      <tr>
+        <th>名称</th>
+        <th>表格</th>
+        <th>数据库</th>
+        <th>创建人</th>
+        <th>创建时间</th>
+      </tr>
+      {% for report in reports %}
+        <tr>
+          <td>
+            <a href="{{ report.get_absolute_url }}">
+              <i class="fa fa-bar-chart-o"></i>
+              {{ report.name }}
+            </a>
+          </td>
+
+          <td>{{ report.table }}</td>
+          <td>{{ report.database.name }}</td>
+          <td>{{ report.creator }}</td>
+          <td>{{ report.created_at|date:'Y/m/d' }}</td>
+        </tr>
+      {% endfor %}
+      </tbody>
+    </table>
+
+  {% else %}
+    <div class="alert alert-info alert-dismissable">
+      <i class="fa fa-info"></i>
+      <button type="button" class="close" data-dismiss="alert" aria-hidden="true">×</button>
+      还没有可以查看的报表， <a href="{% url 'group' %}"> 申请加入一个组 </a> 吧 ~
+    </div>
+
+  {% endif %}
+
+  {% paginate %}
+{% endblock %}

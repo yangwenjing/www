@@ -1,0 +1,27 @@
+{% extends 'base.html' %}
+{% load accout_tags pagination_tags%}
+{% block title %}我的组{% endblock %}
+{% block content %}
+  {% autopaginate my_groups %}
+  <table class="table table-bordered">
+  <thead>
+  <th>组名</th>
+  <th>操作</th>
+  </thead>
+  <tbody>
+  {% for group in my_groups %}
+    <tr>
+    <td>
+      <a href="{% url 'group_detail' group.id %}">{{ group.name }}</a>
+      {% is_admin group user as is_admin %}
+      {% if is_admin %}
+      <span class="label label-info">您是管理员</span>
+      {% endif %}
+    </td>
+    <td><a class="post-link btn btn-primary btn-sm" href="{% url 'exit_group' group.id %}" data-confirm="确定退出{{ group.name }}组?">退组</a></td>
+    </tr>
+  {% endfor %}
+  </tbody>
+  </table>
+  {% paginate %}
+{% endblock %}

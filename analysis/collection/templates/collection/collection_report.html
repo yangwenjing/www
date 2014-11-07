@@ -1,0 +1,125 @@
+{% extends 'base.html' %}
+
+{% block title %} {{ collection }} {% endblock %}
+
+{% block body_class %} collection-report {% endblock %}
+{% block sidebar %}
+  {% include "sidebar.html" with section='collection' tab=collection.id %}
+{% endblock %}
+
+{% block extra_head %}
+{#  <link rel="stylesheet" href="{{ STATIC_URL }}gridster/jquery.gridster.min.css"/>#}
+{% endblock %}
+
+{% block content %}
+  <style>
+  .content{padding: 0px; background:#333;}
+  </style>
+
+  <div ng-app="sina" id='widgets-container'>
+    <div id="widgets" class="gridly">
+      {% include 'collection/collection_report_snippet.html' with reports=collection.reports.all %}
+    </div>
+  </div>
+{% endblock %}
+
+{% block extra_body %}
+  <link rel="stylesheet" href="{{ STATIC_URL }}jquery.gridly/stylesheets/jquery.gridly.css"/>
+  <script type="text/javascript" src="{{ STATIC_URL }}js/vendor/moment-with-langs.min.js"></script>
+  <script src="{{ STATIC_URL }}jquery.gridly/javascripts/jquery.gridly.js?v=2"></script>
+  <script>
+  $(function(){
+    var widgets = $('#widgets');
+
+    $('.report-box').resizable({
+      grid: [80, 40],
+      resize: function(event, ui){
+      },
+      stop: function(event, ui){
+        var id = ui.element.attr('data-id');
+        var req = $.post('{% url "change_report_size" %}', {
+          csrfmiddlewaretoken: '{{ csrf_token }}',
+          report: id,
+          width: ui.size.width,
+          height: ui.size.height
+
+        }, function(json){
+          console.log('finished change report size');
+        }, 'json');
+
+        setTimeout(function () {
+          widgets.gridly('layout');
+        }, 200);
+      }
+    });
+
+    widgets.gridly({
+      base: 20,
+      gutter: 20,
+      columns: 25,
+      draggable: {
+        selector: '.widget',
+        holder: '.widget .box-header'
+      },
+      callbacks: {
+        reordered: function (elements) {
+          elements = $.makeArray(elements);
+
+          var ids = elements.map(function (ele, idx) {
+            return ele.attributes['data-id'].value;
+          });
+          console.log(ids);
+          $.post("{% url 'sort_widgets' collection.id %}", {
+            csrfmiddlewaretoken: '{{ csrf_token }}',
+            sorted: ids.join(',')
+          }, function (json) {
+            console.log('sorted success');
+          });
+        }
+      }
+    });
+
+    $(document).on('click', '.remove-widget', function(event){
+      event.preventDefault();
+
+      if (confirm("确定要删除吗?")) {
+        var url = this.href;
+        var container = $(this).closest('.report-box');
+        widgets.gridly('layout');
+
+        $.post(url, {
+          csrfmiddlewaretoken: '{{ csrf_token }}'
+        }, function(json){
+          if ( json.success ) {
+            container.fadeOut(function(){
+              container.remove(); widgets.gridly('layout');
+            });
+          }
+        }, 'json')
+      }
+    });
+
+    $('.widget iframe').load(function(){
+      console.log('iframe loaded:', this.src);
+      var iframe = this;
+      setTimeout(function(){
+        iframe.src = iframe.src;
+      }, 1000 * 60);
+    });
+  })
+  </script>
+
+  <script src="{{ STATIC_URL }}graph/echarts-plain-map.js"></script>
+  <script src="{{ STATIC_URL }}graph/libgraph.js"></script>
+  <script>
+    var app = angular.module('sina', []);
+    app.directive('test', function () {
+      return {
+        restrict: 'E',
+        template: 'test'
+      }
+    });
+  </script>
+  <script src="{{ STATIC_URL }}js/view.js?v=6"></script>
+{% endblock %}
+

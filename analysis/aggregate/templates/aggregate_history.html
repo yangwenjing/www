@@ -1,0 +1,38 @@
+{% extends 'base.html' %}
+{% load pagination_tags aggregate_tags helper_tags %}
+{% block title %}聚合历史{% endblock %}
+{% block sidebar %}
+  {% render_sidebar 'aggregate.history' %}
+{% endblock %}
+{% block content %}
+  {% autopaginate  aggregate_jobs %}
+<table class="table table-bordered text-center">
+  <caption>聚合任务</caption>
+  <thead>
+  <tr>
+    <th>任务名</th>
+    {% for date in datelist %}
+    <th>{{date|date:"m/d"}}</th>
+    {% endfor %}
+  </tr>
+  </thead>
+  <tbody>
+  {% for aggregate_job in aggregate_jobs %}
+    <tr>
+      <td>{{ aggregate_job }}</td>
+      {% for date in datelist %}
+        {% get_aggregate_history aggregate_job date as history %}
+        <td>
+          {% if history %}
+            <span>删除：{{ history.delete_rows }}</span>
+            <span>插入：{{ history.insert_rows }}</span>
+          {% else %}
+            -
+          {% endif %}
+        </td>
+      {% endfor %}
+    </tr>
+  {% endfor %}
+  </tbody>
+</table>
+{% endblock %}

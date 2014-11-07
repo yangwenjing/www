@@ -1,0 +1,52 @@
+{% extends 'base.html' %}
+{% load helper_tags %}
+{% load pagination_tags %}
+
+{% block title %} 管理用户 {% endblock %}
+{% block content_header %} 用户 {% endblock %}
+
+{% block sidebar %}
+  {% render_sidebar 'account.users' %}
+{% endblock %}
+
+{% block content %}
+{% autopaginate users 15 %}
+
+<table class="table table-bordered">
+  <thead>
+  <tr>
+    <th>用户名</th>
+    <th>email</th>
+    <th>组</th>
+    <th>激活状态</th>
+    <th>Staff</th>
+    <th>最近登录</th>
+
+  </tr>
+  </thead>
+  <tbody>
+  {% for u in users %}
+  <tr>
+    <td>{{ u|default:'我是无名'}}</td>
+    <td>{{ u.email|default:'我还没有指定邮箱'}}</td>
+    <td>
+      <ul>
+      {% for g in u.groups.all %}
+      <li>{{ g.name }}</li>
+      {% empty %}
+      <li>还没有组</li>
+      {% endfor%}
+      </ul>
+    </td>
+    <td>{{ u.is_active }}</td>
+    <td>{{ u.is_staff }}</td>
+    <td> {{ u.last_login | date:"Y年m月d日 D H:i"}}</td>
+
+  </tr>
+  {% endfor %}
+
+  </tbody>
+</table>
+
+  {% paginate %}
+{% endblock %}

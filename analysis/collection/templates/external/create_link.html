@@ -1,0 +1,44 @@
+{% extends 'base.html' %}
+{% load helper_tags pagination_tags collection_tags%}
+{% block sidebar %}
+  {% render_sidebar 'data.collection' %}
+{% endblock %}
+{% block title %} 创建/修改外部链接 {% endblock %}
+{% block content %}
+{#  显示form #}
+  <div class="box box-primary">
+    <form class="form" action="" method="post">
+      {% csrf_token %}
+      <div class="box-body">
+        <div class="form-group">
+          <label for="id_name" class="control-label required">名称:</label>
+          <input id="id_name" class="form-control" name="name" type="text" value="{{ form.instance.name }}" required>
+        </div>
+
+        <div class="form-group">
+          <label for="id_url" class="control-label required">url</label>
+          <input id="id_url" class="form-control" name="url" type="url" value="{{ form.instance.url }}" required>
+        </div>
+
+        <div class="form-group">
+          <label form="id_group" class="control-label">组：</label>
+          <select class="form-control" name="group">
+            <option value="">--</option>
+            {% get_user_groups user as groups %}
+            {% for g in groups %}
+            <option value="{{ g.id }}" {% if g == form.instance.group %}selected {% endif %}>
+              {{ g.name }}
+            </option>
+            {% endfor %}
+          </select>
+        </div>
+      </div>
+
+      <div class="box-footer">
+        <div class="col-sm">
+          <button class="btn btn-primary">保存</button>
+        </div>
+      </div>
+    </form>
+  </div>
+{% endblock %}

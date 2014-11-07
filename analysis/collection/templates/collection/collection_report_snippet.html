@@ -1,0 +1,48 @@
+{% load helper_tags %}
+{% for report in reports %}
+
+  <div class="box box-solid report-box widget"
+       data-id="{{ report.id }}"
+       style="width: {{ report.width }}px; height: {{ report.height }}px;"
+      >
+
+    <div class="box-header bg-black">
+      <div class="box-title">{{ report }}</div>
+      <div class="pull-right">
+        <a target="_blank" href="{{ report.url|parse_relative_date|safe }}">
+          <i class="fa fa-external-link"></i>
+        </a>
+        <a class="remove-widget"
+           href='{% url "remove_widget" report.id %}'
+           ><i class="fa fa-times"></i>
+          &nbsp;
+        </a>
+      </div>
+    </div>
+
+    <div class="box-body">
+
+      {% if report.type == ReportType.GRAPHIC %}
+        <graph title="'{{ report.name }}'"
+               url='"{{ report.url|parse_relative_date|safe }}"'
+               type='"{{ report.get_type_display }}"'
+               style="height: 400px;width: 300px;"
+               show='true'
+               refresh="60000"
+            >
+        </graph>
+
+      {% elif report.type == ReportType.TABLE %}
+
+        <report title="'{{ report.name }}'" url='"{{ report.url|safe }}"'
+                show="true"
+                refresh="60000">
+        </report>
+
+      {% elif report.type == ReportType.IFRAME %}
+        <iframe src="{{ report.url|safe }}" frameborder="0"></iframe>
+
+      {% endif %}
+    </div>
+  </div>
+{% endfor %}

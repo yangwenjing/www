@@ -1,0 +1,58 @@
+body.create-view .field-line {
+  padding: 5px 0;
+}
+body.create-view .ui-sortable-helper {
+  background: #ff8;
+}
+form .form-group label.required {
+  font-weight: bold;
+}
+form .form-group label.required:after {
+  content: "*";
+  display: inline-block;
+  margin-left: 5px;
+  color: #d92626;
+  vertical-align: middle;
+}
+#report-form fieldset {
+  margin: 10px 0;
+  color: #555;
+}
+#report-form .checkbox {
+  font-size: 12px;
+  margin-right: 1em;
+  font-weight: normal;
+}
+.hiding {
+  display: none;
+}
+.widget .box-header {
+  height: 25px;
+  background: #ddd;
+  cursor: move;
+}
+.widget .box-header a {
+  color: inherit;
+}
+.widget .box-header .box-title {
+  font-size: 13px;
+  line-height: 25px;
+  padding: 0 10px;
+}
+.widget .box-body {
+  position: absolute;
+  top: 25px;
+  left: 0;
+  bottom: 0;
+  right: 0;
+}
+.widget .box-body iframe {
+  width: 100%;
+  height: 100%;
+}
+#widgets-container {
+  padding: 0px;
+  min-height: 600px;
+  background: #333333;
+  /*background: url(../img/congruent_pentagon.png);*/
+}

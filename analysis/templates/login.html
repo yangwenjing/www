@@ -1,0 +1,34 @@
+﻿{% extends 'base.html' %}
+{% block title %} 登录 {% endblock %}
+{% block body %}
+
+
+<div class="form-box" id="login-box">
+  <div class="header">DataCubic</div>
+  <style type="text/css">
+    html, body {
+      background-color: #222222 !important;
+      color: #ffffff;
+    }
+  </style>
+  <form action="{% url 'account_login' %}" method="post">{% csrf_token %}
+    <div class="body bg-gray">
+      {% for k, value in errors.items %}
+      <p class="alert alert-danger" style="margin-left: 0" role="alert">{{ value }}</p>
+      {% endfor %}
+      <div class="form-group">
+        <input type="text" name="username" class="form-control" placeholder="新浪Staff邮箱前缀"/>
+      </div>
+      <div class="form-group">
+        <input type="password" name="password" class="form-control" placeholder="密码"/>
+      </div>
+    </div>
+    <div class="footer">
+      <button type="submit" class="btn bg-olive btn-block">登录</button>
+
+    </div>
+  </form>
+
+</div>
+
+{% endblock %}

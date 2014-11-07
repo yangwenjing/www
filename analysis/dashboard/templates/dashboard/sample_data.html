@@ -1,0 +1,21 @@
+{% extends 'base.html' %}
+
+{% block body %}
+  <section style="margin: 20px;">
+    <table class="table table-bordered">
+      <tr>
+        {% for h in cursor.description %}
+        <th> {{ h.0 }} </th>
+        {% endfor %}
+      </tr>
+
+      {% for row in cursor %}
+        <tr>
+          {% for d in row %}
+            <td>{{ d }}</td>
+          {% endfor %}
+        </tr>
+      {% endfor %}
+    </table>
+  </section>
+{% endblock %}

@@ -1,0 +1,44 @@
+{% load helper_tags %}
+
+{% include 'form/errors.html' %}
+
+{% csrf_token %}
+
+{% for field in form %}
+  <div class="form-group {% if field.errors %}has-error{% endif %}">
+
+  {% if not fields or field.name in fields %}
+    {% if field|is_boolean_field %}
+      <div class="col-sm-offset-{{ label_width|default:2 }} col-sm-{{ input_width|default:4 }}">
+        <div class="checkbox">
+          <label>{{ field }} {{ field.label }}</label>
+          <span class="help-block">{{ field.help_text }} </span>
+        </div>
+      </div>
+
+    {% else %}
+        <label for="{{ field.id_for_label }}"
+          class="control-label col-sm-{{ label_width|default:2 }} {% if field.field.required %}required{% endif %}">
+
+            {{ field.label }}</label>
+
+        <div class="col-sm-{{ input_width|default:'10' }}">
+          {{ field|bs_control }}
+
+          {% if field.errors %}
+            <div class="help-block error">
+              {% for error in field.errors %}
+                <strong>  {{ error|escape }} </strong>
+              {% endfor %}
+            </div>
+          {% endif %}
+
+          {% if field.help_text %}
+            <span class="help-block">{{ field.help_text|linebreaksbr }} </span>
+          {% endif %}
+
+        </div>
+    {% endif %}
+    </div>
+  {% endif %}
+{% endfor %}

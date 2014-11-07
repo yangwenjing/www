@@ -1,0 +1,94 @@
+{% extends 'base.html' %}
+{% load helper_tags %}
+{% load pagination_tags %}
+
+{% block title %} 组申请管理 {% endblock %}
+{% block content_header %} 组申请 {% endblock %}
+
+{% block sidebar %}
+{% render_sidebar 'account.group' %}
+{% endblock %}
+
+{% block content %}
+{% autopaginate group_requests %}
+
+<table class="table table-bordered">
+  <caption>等待处理</caption>
+  <thead>
+  <tr>
+    <th>用户</th>
+    <th>组名</th>
+    <th>状态</th>
+    <th>申请时间</th>
+    <th>操作</th>
+  </tr>
+  </thead>
+  <tbody>
+  {% for greq in group_requests %}
+  <tr>
+    <td>{{ greq.user }}</td>
+    <td>{{ greq.group.name }}
+    <td>
+      {{ group_req_status|lookup:greq.status }}
+    </td>
+    <td>
+      {{ greq.update_at|date:"Y年m月d日 D H:i"}}
+    </td>
+    <td>
+      <a href="{% url 'approve_reject_greq' 'approve' greq.id %}" class="post-link btn btn-primary btn-sm" data-confirm="确认批准？">批准</a>
+      <a href="{% url 'approve_reject_greq' 'reject' greq.id %}" class="post-link btn btn-danger btn-sm" data-confirm="确认拒绝？">拒绝</a>
+    </td>
+  </tr>
+  {% empty %}
+  <tr>
+    <td colspan="5">
+    <p>没有等待的请求呢</p>
+    </td>
+  </tr>
+  {% endfor %}
+  </tbody>
+</table>
+  {% paginate %}
+
+{% autopaginate dealed_greqs %}
+<table class="table table-bordered">
+  <caption>完毕处理</caption>
+  <thead>
+  <tr>
+    <th>用户</th>
+    <th>组名</th>
+    <th>状态</th>
+    <th>请求创建时间</th>
+    <th>处理时间</th>
+    <th>操作</th>
+  </tr>
+  </thead>
+  <tbody>
+  {% for greq in dealed_greqs %}
+  <tr>
+    <td>{{ greq.user }}</td>
+    <td>{{ greq.group.name }}
+    <td>
+      {{ group_req_status|lookup:greq.status }}
+    </td>
+    <td>
+      {{ greq.create_at |date:"Y年m月d日 D H:i"}}
+    </td>
+    <td>
+      {{ greq.update_at |date:"Y年m月d日 D H:i"}}
+    </td>
+    <td>
+      操作
+    </td>
+  </tr>
+  {% empty %}
+  <tr>
+      <td colspan="6">
+      <p>没有处理完成的请求呢</p>
+      </td>
+    </tr>
+  {% endfor %}
+  </tbody>
+</table>
+  {% paginate %}
+{% endblock %}

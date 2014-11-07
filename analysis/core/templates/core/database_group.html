@@ -1,0 +1,33 @@
+{% extends 'base.html' %}
+
+{% block sidebar %}
+  {% include 'sidebar.html' with tab='database' %}
+{% endblock %}
+
+{% block title %} 数据库{{ database.id }}用户组管理 {% endblock %}
+{% block content_header %} 数据库{{ database.name }} 用户组 {% endblock %}
+{% load helper_tags %}
+
+{% block content %}
+  <div class="box box-primary">
+    <form action="{%url 'manage_database_group' database.id %}" method="post">
+        {% csrf_token %}
+
+        <div class="modal-header">
+          <button type="button" class="close" data-dismiss="modal"><span aria-hidden="true">&times;</span>
+            <span class="sr-only">Close</span></button>
+
+          <h4 class="modal-title">{{database.name}}-用户组管理</h4>
+        </div>
+
+        <div class="modal-body">
+          {% get_dbgroup_form database %}
+        </div>
+
+        <div class="modal-footer">
+          <button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
+          <button class="btn btn-primary" ng-disabled="databaseForm.$invalid">Save</button>
+        </div>
+      </form>
+  </div>
+{% endblock %}

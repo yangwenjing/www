@@ -1,0 +1,52 @@
+#!/bin/sh
+MYAPP=/data/www/wwwroot/console/analysis/
+PIDFILE=/var/run/DataCubic.pid
+HOST=127.0.0.1
+PORT=10240
+
+cd $MYAPP
+
+function failure () {
+  STATUS=$?;
+  echo; echo "Failed $1 (exit code ${STATUS}).";
+  exit ${STATUS};
+}
+
+function start_server () {
+  cd $MYAPP && /data/www/wwwroot/console/virtualenvs/cubic/bin/gunicorn analysis.wsgi:application -b $HOST:$PORT -p $PIDFILE -D --timeout 600 -k gevent
+}
+
+function stop_server () {
+  kill `cat $PIDFILE` || failure "stopping DataCubic ..."
+  rm $PIDFILE  -rf
+}
+
+DAEMONISE=$2
+
+case "$1" in
+  start)
+    echo -n "Starting DataCubic: "
+    [ -e $PIDFILE ] && { echo "PID file exists."; exit; }
+    start_server || failure "starting DataCubic ..."
+    echo "Done."
+    ;;
+  stop)
+    echo -n "Stopping DataCubic: "
+    [ -e $PIDFILE ] || { echo "No PID file found."; exit; }
+    stop_server
+    echo "Done."
+    ;;
+  poll)
+    [ -e $PIDFILE ] && exit;
+    start_server || failure "starting DataCubic ..."
+    ;;
+  restart)
+    echo -n "Restarting DataCubic: "
+    [ -e $PIDFILE ] || { echo -n "No PID file found..."; }
+    stop_server
+    start_server || failure "restarting DataCubic ..."
+    echo "Done."
+    ;;
+esac
+
+exit 0

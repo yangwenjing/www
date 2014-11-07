@@ -1,0 +1,119 @@
+{% extends 'base.html' %}
+{% load helper_tags %}
+
+{% block sidebar %}
+  {% render_sidebar 'aggregate.list' %}
+{% endblock %}
+
+{% block title %} {% if job %} 修改聚合任务 {% else %} 创建聚合任务 {% endif %} {% endblock %}
+{% block content_header %} {% if job %} 修改任务 {% else %} 创建任务 {% endif %} {% endblock %}
+
+{% block content %}
+   <div class="box box-primary">
+    <form class="form-horizontal" id="job-form"
+          action="{{ request.path }}" method="post"
+          ng-app="sina" ng-controller="JobFormController">
+
+      <div class="box-body">
+        {% include 'form/horizontal_form.html' %}
+
+        <div class="form-group" ng-show="fields">
+          <label class="control-label col-sm-2">
+            所有字段
+          </label>
+
+          <div class="col-sm-10">
+
+            <div ui-sortable ng-model="fields">
+              <div ng-repeat="field in fields" style="margin-bottom: 6px;">
+                <div class="label label-primary" >
+                  <span ng-bind="field"></span>
+                  <input type="hidden" name="field" ng-value="field"/>
+                </div>
+              </div>
+            </div>
+
+
+
+          </div>
+        </div>
+      </div>
+
+      <div class="box-footer">
+        <div class="col-sm-offset-2">
+          <button class="btn btn-primary">保存</button>
+        </div>
+      </div>
+    </form>
+  </div>
+
+{% endblock %}
+{% block extra_body %}
+  <script src="{{ STATIC_URL }}js/angular.ui.sortable.js"></script>
+
+  <script>
+  var app = angular.module('sina', ['ui.sortable']);
+
+  app.controller('JobFormController', function($scope){
+    {% if job %}
+      $scope.fields = '{{ job.fields }}'.split(',');
+    {% else %}
+      $scope.fields = [];
+    {% endif %}
+  });
+
+  $(function() {
+
+    $('#id_database').change(function(){
+      var db = $(this).val();
+      if( !db ) {
+        return;
+      }
+
+      var table = $('#id_table');
+      var old_value = table.val() || '{{ job.table|default:'' }}';
+
+      table.html('<option value="">Loading ...</option>');
+
+      $.get('{% url "query_tables" %}?database=' + db, function(tables) {
+        var options = tables.map(function (table) {
+          var option = "<option value='" + table.name + "'>" + table.name + "</option>";
+          if ( table.name === '{{ job.table }}' ) {
+            option = option.replace(/<option/, '<option selected ');
+          }
+          return option;
+        });
+
+        var scope = angular.element('#job-form').scope();
+
+        scope.tables = {};
+        tables.map(function(table){
+          scope.tables[table.name] = table;
+        });
+
+        table.html(options.join(''));
+
+        console.log(old_value, table.val());
+        if ( old_value !== table.val() ){
+          table.change();
+        }
+
+      });
+
+    }).change();
+
+    $('#id_table').change(function(){
+      var table = $(this).val();
+
+      var scope = angular.element('#job-form').scope();
+      scope.$apply(function () {
+        scope.fields = scope.tables[table].fields.map(function(field){
+          return field.name;
+        });
+      });
+
+    });
+
+  });
+  </script>
+{% endblock %}

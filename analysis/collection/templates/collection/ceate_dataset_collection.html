@@ -1,0 +1,21 @@
+{% extends 'base.html' %}
+{% load helper_tags pagination_tags %}
+
+{% block title %} {{ title }} {% endblock %}
+{% block content %}
+{#  显示form #}
+  <div class="box box-primary">
+    <form class="form-horizontal" action="" method="post">
+
+      <div class="box-body">
+        {% include 'form/horizontal_form.html' %}
+      </div>
+
+      <div class="box-footer">
+        <div class="col-sm-offset-2">
+          <button class="btn btn-primary">保存</button>
+        </div>
+      </div>
+    </form>
+  </div>
+{% endblock %}

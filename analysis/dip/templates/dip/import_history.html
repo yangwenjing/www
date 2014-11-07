@@ -1,0 +1,358 @@
+{% extends 'base.html' %}
+{% load helper_tags dip_tags pagination_tags %}
+
+{% block sidebar %}
+{% render_sidebar 'data.history' %}
+{% endblock %}
+
+{% block title %}导入历史{% endblock %}
+{% block content_header %} 导入历史{% endblock %}
+{% block content %}
+  <style>
+  td .ok{display: block;}
+  td .refresh{display: none;}
+  td:hover .ok {display: none;}
+  td:hover .refresh{display: block}
+  </style>
+{% autopaginate hour_jobs %}
+<div data-ng-app="sina" ng-controller="ImportHistoryCtrl">
+
+  <form class="text-right" action="{% url 'import_history' %}" method="GET">
+    <input required type="date" ng-value="begin_date" class="calendar-date dateFrom input-sm" name="from_date"/> 到
+    <input required class="calendar-date dateTo input-sm" type="date" ng-value="end_date" name="to_date"/>
+    <button type="submit" class="btn btn-primary btn-sm" ng-click="getHistoryDuring()">选择日期</button>
+  </form>
+
+  <table class="table table-bordered text-center">
+  <caption>小时任务</caption>
+  <thead>
+  <tr>
+    <th>任务名</th>
+    {% for day in daylist %}
+    <th>{{day|date:"m/d"}}</th>
+    {% endfor %}
+  </tr>
+  </thead>
+  <tbody>
+<tr  ng-repeat="_jobs in hourly_jobs">
+  <td><span ng-bind="_jobs.jobname"></span></td>
+  <td ng-repeat="job_records in _jobs.job_records_list">
+    <a href="" ng-if="job_records.status=='no_record'"
+       class="glyphicon glyphicon-remove text-red"
+       data-ng-click="display(job_records)">
+    </a>
+
+    <a href="" ng-if="job_records.status=='fail'"
+       class="text-danger"
+       ng-bind="job_records.result"
+       data-ng-click="display(job_records)">
+     </a>
+
+    <a ng-if="job_records.status=='success'"
+       class='glyphicon glyphicon-ok text-green'
+        data-ng-click="display(job_records)"></a>
+  </td>
+</tr>
+  </tbody>
+</table>
+<table class="table table-bordered text-center" ng-hide="hide" id="import_history_detail">
+<tr>
+  {% for h in hours %}
+  <th>{{h}}</th>
+  {% endfor %}
+</tr>
+  <tr>
+     <td ng-repeat="record in records.recordlist">
+
+       <a ng-if="record.status=='success'"
+             title="导入{% verbatim %}{{record.import_rows}}行,忽略{{record.ignore_rows}}{% endverbatim %}行"
+             class="glyphicon glyphicon-ok text-green ok">
+             </a>
+       <a ng-if="record.status=='success'"
+          class="glyphicon glyphicon-refresh refresh"
+           href=""
+           title="重新导入？已经导入{% verbatim %}{{record.import_rows}}行,忽略{{record.ignore_rows}}{% endverbatim %}行"
+           ng-click="reimport_hourly(record.jobid,record.timestamp,record,records)">
+          </a>
+
+       <span ng-if="record.status=='running'"
+             title="导入中"
+             title="导入{% verbatim %}{{record.import_rows}}行,忽略{{record.ignore_rows}}{% endverbatim %}行"
+             class="glyphicon glyphicon-import text-black"></span>
+
+       <a ng-if="record.status=='fail'" title="导入{% verbatim %}#{{jobid}}的{{record.timestamp}}任务？
+        导入{{record.import_rows}}行,忽略{{record.ignore_rows}}{% endverbatim %}行"
+          data-ng-click="import_hourly(record.jobid,record.timestamp,record,records)"
+          class="fa fa-truck" href=""></a>
+
+     </td>
+  </tr>
+</table>
+
+{% autopaginate daily_jobs %}
+<table class="table table-bordered text-center ">
+  <caption>每天任务</caption>
+  <thead>
+  <tr>
+    <th>任务名</th>
+    {% for day in daylist %}
+    <th>{{day|date:'m/d'}}</th>
+    {% endfor %}
+  </tr>
+  </thead>
+  <tbody>
+<tr ng-repeat="daily_job in daily_jobs">
+  <td><span ng-bind="daily_job.jobname"></span></td>
+
+  <td ng-repeat="record in daily_job.recordlist">
+
+   <a ng-if="record.status=='success'"
+             title="导入{% verbatim %}{{record.import_rows}}行,忽略{{record.ignore_rows}}{% endverbatim %}行"
+             class="glyphicon glyphicon-ok text-green ok">
+             </a>
+   <a ng-if="record.status=='success'"
+      class="glyphicon glyphicon-refresh refresh"
+       href=""
+       ng-click="reimport(record.jobid,record.timestamp,record)">
+      </a>
+
+   <span ng-if="record.status=='running'"
+         title="导入中"
+         class="glyphicon glyphicon-import text-black"></span>
+
+  <a ng-if="record.status=='fail'" title="导入{% verbatim %}#{{jobid}}的{{record.timestamp}}任务？
+    导入{{record.import_rows}}行,忽略{{record.ignore_rows}}{% endverbatim %}行"
+     data-ng-click="import(record.jobid,record.timestamp,record)"
+     class="fa fa-truck" href=""></a>
+  </td>
+
+</tr>
+  </tbody>
+</table>
+</div>
+
+{% endblock %}
+{% block extra_body %}
+<script>
+  var app = angular.module('sina', []);
+  app.controller('ImportHistoryCtrl', function ($scope,$http) {
+    $scope.jobid=0;
+    $scope.timestamp_profix = '';
+    $scope.hide = true;
+    $scope.importing = 0;
+    $scope.begin_date = "{{ daylist.0 |date:'Y-m-d'}}";
+    $scope.end_date = "";
+    window.onbeforeunload = function () {
+      return $scope.importing>0? "数据正在导入中，关闭浏览器会导致未知错误 ！！" : null;
+    };
+    $scope.reimport_hourly = function(jobid,timestamp,record, job_records)
+    {
+      var _confirm = window.confirm("重新导入可能导致数据重复，确认重新导入？");
+      if(_confirm){
+        job_records.result -= 1;
+        $scope.import_hourly(jobid,timestamp,record,job_records);
+      }
+
+    };
+    $scope.import_hourly = function(jobid, timestamp, record, job_records)
+    {
+      var post_url = "";
+      if (record.status == 'success') {
+        post_url = "{% url 'reimport_job' %}";
+      }
+      else {
+        post_url = "{% url 'import_job' %}";
+      }
+      record.status = 'running';
+      $scope.importing += 1;
+      $.post(post_url+"?job_id=" + jobid + "&timestamp=" + timestamp,
+          {'csrfmiddlewaretoken': "{{ csrf_token }}"}
+      ).done(function (data) {
+            data = JSON.parse(data);
+            $scope.$apply(function () {
+              if (data['is_success']) {
+                record.status = 'success';
+                job_records.result += 1;
+                if(job_records.result==24)
+                  job_records.status = 'success';
+                else
+                  job_records.status = 'fail';
+                record.ignore_rows = data['ignore_rows'];
+                record.import_rows = data['import_rows'];
+                alert("成功！\n成功消息："+data.message + "\n任务输出：" + data.output);
+
+              }
+              else {
+                record.status = 'fail';
+                alert("失败！\n失败消息："+data.message + "\n任务输出：" + data.output);
+
+              }
+
+
+            });
+          }
+      ).fail(function (data) {
+            $scope.$apply(function () {
+              record.status = 'fail';
+            });
+            if(typeof data === "json")
+            {  data = JSON.parse(data);
+               alert("失败！\n失败消息：" + data.message + "\n任务输出：" + data.output);
+            }
+            else{
+              alert(data.responseText.substr(0,500)+"\n......");
+
+            }
+          }
+      ).always(function (data) {
+            $scope.$apply(function () {
+              $scope.importing -= 1;
+            });
+          });
+    };
+
+
+    $scope.reimport = function(jobid, timestamp, record){
+      var _confirm = window.confirm("重新导入可能导致数据重复，确认重新导入？");
+      if (_confirm) {
+        record.status = 'fail';
+        $scope.import(jobid, timestamp, record);
+      }
+    };
+
+
+    $scope.import = function (jobid, timestamp, record) {
+
+      var post_url = "";
+      if (record.status == 'success') {
+        post_url = "{% url 'reimport_job' %}";
+      }
+      else {
+        post_url = "{% url 'import_job' %}";
+      }
+      record.status = 'running';
+      $scope.importing += 1;
+      $.post(post_url+"?job_id=" + jobid + "&timestamp=" + timestamp,
+          {'csrfmiddlewaretoken': "{{ csrf_token }}"}
+      ).done(function (data) {
+            data = JSON.parse(data);
+            $scope.$apply(function () {
+              if (data['is_success']) {
+                record.status = 'success';
+                alert("成功！\n成功消息："+data.message + "\n任务输出：" + data.output);
+              }
+              else {
+                record.status = 'fail';
+                alert("失败！\n失败消息："+data.message + "\n任务输出：" + data.output);
+              }
+
+            });
+          }
+      ).fail(function (data) {
+
+            if(typeof data === "json")
+            {
+              data = JSON.parse(data);
+              alert("失败！\n失败消息："+data.message + "\n任务输出：" + data.output);
+            }
+            else{
+              alert(data.responseText.substr(0,500)+"\n......");
+            }
+
+            $scope.$apply(function () {
+              record.status = 'fail';
+            });
+
+          }
+      ).always(function (data) {
+            $scope.$apply(function () {
+              $scope.importing -= 1;
+            });
+          });
+    };
+
+    $scope.display = function(job_records) {
+
+      jobid = job_records.jobid;
+      timestamp_profix = job_records.timestamp_profix;
+      if ($scope.jobid == jobid && $scope.timestamp_profix == timestamp_profix) {
+        $scope.hide = $scope.hide == true ? false : true;
+        return;
+      }
+      $scope.hide = false;
+      $scope.jobid = jobid;
+      $scope.timestamp_profix = timestamp_profix;
+      $scope.records = job_records;
+
+    };
+
+     $scope.daily_jobs = [];
+//    处理每天任务
+    {% for job in daily_jobs %}
+      {% get_import_status_daily job daylist as daily_job_records %}
+      var job_records = new Object();
+      job_records.jobname = "{{job}}";
+
+      job_records.recordlist = [];
+      {% for r in daily_job_records %}
+        var record = new Object();
+        record.jobid = {{job.id}};
+        record.timestamp = {{r.timestamp}};
+
+        record.status = {{r.status}};
+        if(record.status==1)
+          record.status = 'running';
+        else if(record.status==2)
+          record.status = 'success';
+        else
+          record.status = 'fail';
+        record.import_rows = {{r.import_rows}};
+        record.ignore_rows = {{r.ignore_rows}};
+        job_records.recordlist.push(record);
+      {% endfor %}
+  $scope.daily_jobs.push(job_records);
+    {% endfor %}
+
+  $scope.hourly_jobs = [];
+  {% for job in hour_jobs %}
+    var _jobs = new Object();
+    _jobs.jobname = "{{job}}";
+    _jobs.job_records_list = [];
+
+    {% for day in daylist %}
+      $scope.end_date = "{{ day |date:'Y-m-d'}}";
+      {% get_import_status_hourly job day as job_day_records %}
+      //job_records 获取一天一个job的24个记录
+      var job_records = new Object();
+      job_records.status = '{{job_day_records.status}}';
+      job_records.jobid = {{job.id}};
+      job_records.timestamp_profix = '{{day}}';
+      job_records.recordlist = [];
+
+      job_records.result = {{job_day_records.result}};
+
+      {% for r in job_day_records.records %}
+        var record = new Object();
+            record.jobid = {{job.id}};
+            record.timestamp = {{r.timestamp}};
+            record.status = {{r.status}};
+             record.status = {{r.status}};
+        if(record.status==1)
+          record.status = 'running';
+        else if(record.status==2)
+          record.status = 'success';
+        else
+          record.status = 'fail';
+            record.import_rows = {{r.import_rows}};
+            record.ignore_rows = {{r.ignore_rows}};
+            job_records.recordlist.push(record);
+        {% endfor %}
+    _jobs.job_records_list.push(job_records);
+      {% endfor %}
+  $scope.hourly_jobs.push(_jobs);
+  {% endfor %}
+
+  });
+</script>
+
+{% endblock %}

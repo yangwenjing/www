@@ -1,0 +1,64 @@
+{% extends 'base.html' %}
+{% load helper_tags pagination_tags %}
+
+{% block title %} 导入程序 {% endblock %}
+
+{% block sidebar %}
+  {% render_sidebar 'data.jobs' %}
+{% endblock %}
+
+{% block content %}
+
+  {% autopaginate jobs %}
+
+  <table class="table table-bordered">
+    <thead>
+    <tr>
+      <th>表格</th>
+      <th>数据库</th>
+      <th>DIP ID</th>
+      <th>DIP Name</th>
+      <th>创建人</th>
+      <th></th>
+    </tr>
+    </thead>
+    <tbody>
+
+    {% for job in jobs %}
+      <tr>
+        <td> {{ job.table }} </td>
+        <td> {{ job.database.name }} </td>
+        <td>{{ job.dip_id }}</td>
+        <td>{{ job.dip_alias }}</td>
+        <td>{{ job.creator }}</td>
+        <td>
+          <div class="btn-group btn-group-xs">
+            <a href="{% url 'edit_job' job.id %}"
+               class="btn btn-default"
+               title="编辑任务">
+              <i class="fa fa-pencil"></i>
+            </a>
+
+            <a href="{% url 'delete_job' job.id %}"
+               class="post-link btn btn-danger" data-confirm="确认删除？"
+               title="删除任务">
+              <i class="fa fa-trash-o"></i>
+            </a>
+          </div>
+        </td>
+      </tr>
+    {% empty %}
+      <tr>
+        <td colspan="100%">还没有创建任务哦</td>
+      </tr>
+    {% endfor %}
+
+    </tbody>
+  </table>
+
+  {% paginate %}
+  <p>
+    <a class="btn btn-primary" href="{% url 'create_job' %}">创建任务</a>
+  </p>
+{% endblock %}
+

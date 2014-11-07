@@ -1,0 +1,603 @@
+{% extends 'base.html' %}
+
+{% load helper_tags pagination_tags collection_tags%}
+
+{% block title %} {{ view }} {% endblock %}
+
+{% block content %}
+  <section ng-app='sina' ng-controller="AnalysisController">
+
+  <div class="box  box-primary">
+    <div class="box-header">
+      <h3 class="box-title"> {{ view }} </h3>
+
+      <div class="box-tools pull-right">
+        <button class="btn btn-primary btn-xs" data-widget="collapse"><i class="fa fa-minus"></i></button>
+      </div>
+    </div>
+
+    <div class="box-body">
+      <form class="form-inline" action="{{ request.path }}"
+            id="report-form" name='reportForm'>
+
+        <fieldset>
+          <label class='legend'>维度:</label> &nbsp;
+          {% for dimension in view.dimensions %}
+            <label class="checkbox">
+              <input type="checkbox"
+                     name="d"
+                     class="simple"
+                     checklist-model="checkedDimensions"
+                     checklist-value="'{{ dimension }}'"
+                     value="{{ dimension }}"
+              />
+              {{ dimension }}
+            </label>
+          {% endfor %}
+        </fieldset>
+
+        <fieldset>
+          <label class='legend'>指标:</label> &nbsp;
+
+          {% for property in view.properties %}
+            <label class="checkbox">
+              <input type="checkbox" name="p"
+                     class="simple"
+                     checklist-model="checkedProperties"
+                     checklist-value="'{{ property.verbose_name }}'"
+                     value="{{ property.verbose_name }}"/> {{ property.verbose_name }}
+            </label>
+          {% endfor %}
+        </fieldset>
+
+        <fieldset>
+          <label class="legend">统计:</label> &nbsp;
+          <label class="checkbox">
+            <input type="checkbox" name="$variance" {% if variance %}checked{% endif %}/> 标准差
+          </label>
+        </fieldset>
+
+        <fieldset>
+          <label class='legend'>过滤:</label> &nbsp;
+
+          {% verbatim %}
+
+          <span class="filter-item" data-ng-repeat="(filter, value_list) in filters track by $index">
+            <span ng-bind="filter"></span>
+
+            <span ng-repeat="value in value_list track by $index">
+
+              <a class="date-range btn btn-default btn-sm"
+                 ng-if="dimensions[filter].type == 'date'">
+
+                <i class="fa fa-calendar"></i>
+                <span class="display">  </span>
+                <b class="caret"></b>
+                <input type="hidden" name="{{ filter }}" value="{{ value }}"/>
+              </a>
+
+              <span class="label label-warning"
+                    ng-if="dimensions[filter].type !== 'date'">
+
+                {{ value }} &nbsp;
+                <a href="" class="remove-filter" style="color: #fff;"
+                   ng-click="removeFilter(filter, $index);">&times;</a>
+                <input type="hidden" name="{{ filter }}" value="{{ value }}"/>
+              </span>
+
+              &nbsp;
+            </span>
+          </span>
+          {% endverbatim %}
+
+        </fieldset>
+        <hr/>
+
+        <button class="btn btn-primary btn-sm">查询</button>
+        &nbsp;
+
+        <div class="btn-group">
+          <button class="btn btn-default btn-sm" name='export'
+                  title="将数据导出为 CSV 文件"
+                  value='csv'>
+            <i class="fa fa-file"></i>
+            导出
+          </button>
+
+          <a class="btn btn-default btn-sm"
+             title="根据所选维度和指标以及时间范围绘制曲线图"
+             ng-click='renderGraph();'
+             ng-init="showGraph = false;reportUrl = '';"
+             ng-disabled="!graphPermit || loading">
+
+            <span ng-if='loading' ng-cloak>
+              <i class="fa fa-spin fa-spinner"></i>
+            </span>
+
+            <span ng-if='!loading'>
+              <i class="fa fa-bar-chart-o"></i>
+              画图
+            </span>
+          </a>
+
+          <a href='' class="btn btn-default btn-sm"
+             data-ng-click="showGraph = false">
+            <i class="fa fa-times"> </i>
+            删图
+          </a>
+        </div>
+
+        &nbsp;
+        <a class="btn btn-default btn-sm" href="#star-modal"
+           ng-click="starType = 'graph';"
+           data-ng-disabled="!graphPermit"
+           data-toggle="modal"
+           title="首次当前所选的维度、指标">收藏</a>
+
+        {% verbatim %}
+        &nbsp;
+        <span class="help-inline text-danger" ng-if='graphPermitMessage' ng-bind="graphPermitMessage"></span>
+        {% endverbatim %}
+
+      </form>
+    </div>
+  </div>
+
+  <div class="modal fade" id="star-modal">
+    <div class="modal-dialog">
+      <div class="modal-content">
+        <form action="{% url 'star_report' %}" method="post">
+          <div class="modal-header">
+            <button type="button" class="close" data-dismiss="modal"><span aria-hidden="true">&times;</span><span
+                class="sr-only">Close</span></button>
+            <h4 class="modal-title" id="myModalLabel">收藏报表</h4>
+          </div>
+
+          <div class="modal-body">
+            {% csrf_token %}
+            <div class="form-group">
+              <label class="control-label" for="id_name">名字:</label>
+              <input class="form-control" id="id_name" type="text" name="name" required/>
+            </div>
+
+            <div class="form-group">
+              <label class="control-label" for="id_collection">收藏到:</label>
+
+              {% get_collections_for user as collections %}
+              <select name="collection" id="id_collection" class="form-control">
+                <option value="">Dashboard</option>
+                {% for collection in collections %}
+                  {% if collection.name != 'Dashboard' %}
+                    <option value="{{ collection.id }}">{{ collection.name }}</option>
+                  {% endif %}
+                {% endfor %}
+              </select>
+            </div>
+
+            <div class="checkbox">
+              <label>
+                <input type="checkbox" name="relative_date"
+                       ng-model="relativeDate"
+                       ng-checked="relativeDate"
+                       class="simple"/> 使用相对时间
+              </label>
+            </div>
+
+            <div class="form-group">
+              <label class="control-label">URL:</label>
+              <input type="text" name="url" ng-value="getStarUrl(starType, relativeDate, dateRange)"
+                     class="form-control"
+                     required readonly/>
+            </div>
+
+            <input type="hidden" name="type" ng-value="starType" required/>
+
+          </div>
+
+          <div class="modal-footer">
+            <button type="button" class="btn btn-sm btn-default" data-dismiss="modal">取消</button>
+            <button class="btn btn-sm btn-primary">收藏</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <div class="box box-info" ng-show="showGraph" ng-cloak>
+    <div class="box-body" ng-style="{height: graphHeight()}">
+      <graph title="'Test'"  url='reportUrl' type='graphType' show='showGraph'>
+      </graph>
+    </div>
+  </div>
+
+  <p>
+{#    <a class="btn btn-default btn-sm" href="" ng-click="transformTable()">表格多维变换</a>#}
+    <a class="btn btn-default btn-sm" href="#star-modal"
+       data-toggle="modal"
+       ng-click="starType= 'table';">收藏表格</a>
+  </p>
+
+  {% autopaginate result limit %}
+  {% paginate %}
+
+  <table class="table table-bordered" id="report">
+    <thead>
+    <tr>
+      {% for h in dimensions %}
+        <th>{{ h }}</th>
+      {% endfor %}
+
+      {% for h in properties %}
+        <th>{{ h }}</th>
+      {% endfor %}
+
+      {% if variance %}
+        {% for h in properties %}
+          <th>{{ h }}标准差</th>
+        {% endfor %}
+
+      {% endif %}
+    </tr>
+    </thead>
+
+    <tbody>
+    {% for row in result %}
+      <tr>
+        {% for d in row %}
+          <td>
+
+            {% if forloop.counter > dimensions|length %}
+              {{ d|safe }}
+
+            {% else %}
+              <a href=''
+                 title="点击过滤此值, 按照 Alt 键可以多选" class="filter"
+                 data-ng-click='filterDimension($event);'
+                 data-dimension='{{ dimensions|get_item:forloop.counter0|getattr:'verbose_name' }}'>
+                {{ d|safe }}
+              </a>
+            {% endif %}
+
+          </td>
+        {% endfor %}
+      </tr>
+    {% endfor %}
+    </tbody>
+
+  </table>
+
+  {% paginate %}
+
+  </section>
+{% endblock %}
+
+{% block extra_body %}
+  <script type="text/javascript" src="{{ STATIC_URL }}js/vendor/moment-with-langs.min.js"></script>
+  <link rel="stylesheet" href="{{ STATIC_URL }}bootstrap-daterangepicker/daterangepicker-bs3.css"/>
+  <script type="text/javascript" src="{{ STATIC_URL }}bootstrap-daterangepicker/daterangepicker.js"></script>
+
+  <link rel="stylesheet" type="text/css" href="{{ STATIC_URL }}tablesorter/css/theme.default.css">
+  <script type="text/javascript" src="{{ STATIC_URL }}tablesorter/js/jquery.tablesorter.min.js"></script>
+  <script type="text/javascript" src="{{ STATIC_URL }}tablesorter/js/jquery.tablesorter.widgets.js"></script>
+
+  <script src="{{ STATIC_URL }}graph/echarts-plain-map.js"></script>
+  <script src="{{ STATIC_URL }}graph/libgraph.js"></script>
+
+  <script src="{{ STATIC_URL }}js/angular/checklist-model.js"></script>
+
+  <script>
+  var app = angular.module('sina', ["checklist-model"]);
+  app.controller('AnalysisController', function($scope, $http, $timeout){
+    $scope.dimensions = {};
+
+    {% for d in view.dimensions %}
+    $scope.dimensions['{{ d.verbose_name}}'] = {
+      order: {{ forloop.counter }},
+      verbose_name: "{{ d }}",
+      type: "{{ d.type }}",
+      checked: false
+    };
+    {% endfor %}
+
+    $scope.properties = {};
+
+    {% for p in view.properties %}
+    $scope.properties['{{ p.verbose_name }}'] = {
+      verbose_name: "{{ p }}",
+      type: '{{ p.type }}'
+    } ;
+    {% endfor %}
+
+    $scope.checkedDimensions = [{% for d in dimensions %}'{{ d.verbose_name }}', {% endfor %}];
+
+    for( var name in $scope.dimensions ) {
+      if ($scope.dimensions.hasOwnProperty(name)) {
+        var dim = $scope.dimensions[name];
+        if ($scope.checkedDimensions.indexOf(dim.verbose_name) !== -1) {
+          dim.checked = true;
+        }
+      }
+    }
+
+    $scope.checkedProperties = [{% for p in properties %}'{{ p.verbose_name }}', {% endfor %}];
+    $scope.filters = {};
+
+    $scope.graphPermit = false;
+    $scope.graphPermitMessage = '';
+
+    {% for dim, value in filters %}
+
+      {% if value|is_list %}
+        $scope.filters['{{ dim.verbose_name }}'] = [];
+        {% for v in value %}
+          $scope.filters['{{ dim.verbose_name }}'].push('{{ v }}');
+        {% endfor %}
+
+      {% else %}
+        $scope.filters['{{ dim.verbose_name }}'] = ['{{ value }}'];
+      {% endif %}
+
+      {% if dim.type in 'date,datetime' %}
+        $scope.timeDimension = '{{ dim.verbose_name }}';
+      {% endif %}
+    {% endfor %}
+
+    $scope.removeFilter = function(verbose_name, value_idx){
+      $scope.filters[verbose_name].splice(value_idx, 1);
+      if ( $scope.filters[verbose_name].length === 0 ) {
+        delete $scope.filters[verbose_name];
+      }
+    };
+
+    $scope.filterDimension = function(event){
+      event.preventDefault();
+      var ele = angular.element(event.target);
+      var dim = ele.attr('data-dimension');
+      var value = ele.text().trim();
+
+      if ( event.altKey ) {
+        if ( !$scope.filters[dim] ) {
+          $scope.filters[dim] = [];
+        }
+        if ( $scope.filters[dim].indexOf(value) === -1 ) {
+          $scope.filters[dim].push(value);
+        }
+
+      }else {
+        $scope.filters[dim] = [value];
+        $timeout(function(){
+          document.reportForm.submit();
+        }, 100) ;
+      }
+      console.log($scope.filters);
+    };
+
+    var renderTimer = null;
+
+    $scope.getReportUrl = function () {
+      var form = angular.element('#report-form');
+
+      var dims = $scope.checkedDimensions.filter(function (verbose) {
+        return !(verbose in $scope.filters) || verbose === $scope.timeDimension;
+      }).join(',');
+
+      var url = form.attr('action') + '?' + 'd=' + dims + '&p=' + $scope.checkedProperties.join(',');
+
+      _.each($scope.filters, function(values, verbose){
+        _.each(values, function(value){
+          url += '&' + encodeURIComponent(verbose) + '=' + encodeURIComponent(value);
+        });
+      });
+      return url
+    };
+
+    /* 表格的 URL 需要使用页面刚加载时的 URL，而不是动态选择的 */
+    var pageLoadUrl = window.location.pathname + window.location.search;
+    $scope.relativeDate = true;
+
+    $scope.getStarUrl = function (starType, relativeDate, replaceWith) {
+      // 默认是 pageLoadUrl
+      var url = pageLoadUrl;
+      var form = $('#report-form');
+
+      if ( starType === 'graph' ) {
+        url =  form.attr('action') + "?" + form.serialize();
+      }
+
+      var regex = new RegExp(encodeURIComponent($scope.timeDimension) + "=([^&]*)");
+      if ( relativeDate && replaceWith ) {
+        url = url.replace(regex, encodeURIComponent($scope.timeDimension) + "=" + replaceWith);
+      }
+
+      return url;
+    };
+
+    $scope.renderGraph = function () {
+      $scope.showGraph = true;
+    };
+
+    $scope.graphHeight = function(){
+      if ( $scope.graphType === 'line' ) {
+        return Math.ceil($scope.checkedProperties.length / 2) * 300;
+
+      }else if ( $scope.graphType === 'bar' || $scope.graphType === 'geo' ) {
+        return $scope.checkedProperties.length * 300;
+      }
+    };
+
+    $scope.canGraph = function(){
+      var s = $scope;
+      var error = '';
+      var type = 'line';
+
+      var date = s.filters[s.timeDimension][0];
+      console.log('date', date);
+      var singleDate = date.search('~') === -1 || date.split('~')[0] === date.split('~')[1];
+      singleDate = singleDate && (s.checkedDimensions.filter(function(dim){
+        return s.dimensions[dim].type === 'time';
+      }).length === 0);
+
+      if ( !s.checkedDimensions.length ) {
+        error = '需要选择至少一个维度';
+      }
+
+      if ( !s.checkedProperties.length ) {
+        error = '需要选择至少一个指标';
+      }
+
+      if ( !s.timeDimension ) {
+        error = '没有选择时间维度';
+      }
+
+      var blankDimensions = s.checkedDimensions.filter(function(id){
+        return !s.filters[id] && s.dimensions[id].type !== 'time';
+      });
+
+      if ( singleDate ) {
+        if (blankDimensions.length > 0 && blankDimensions.length === 1) {
+          type = s.dimensions[blankDimensions[0]].type === 'province' ? 'geo' : 'bar';
+
+        } else if ( blankDimensions.length > 0) {
+          error = '选择多个维度时没有适合的图表类型'
+
+        } else if ( type === 'line' ) {
+          error = '绘制曲线图需要选择日期范围';
+        }
+
+      } else if ( blankDimensions.length > 0 ) {
+          error = '选择多个维度时没有适合的图表类型'
+      }
+
+      if ( error ) {
+        s.graphPermit = false;
+        s.graphPermitMessage = error;
+        return false;
+      }
+
+      s.graphPermit = true;
+      s.graphPermitMessage = '';
+      s.graphType = type;
+      s.reportUrl = s.getReportUrl();
+
+      if ( s.graphPermit ) {
+
+        if ( renderTimer ) {
+          $timeout.cancel(renderTimer);
+          renderTimer = null;
+        }
+      }
+
+      return s.graphPermit;
+    };
+
+    $scope.$watchCollection('checkedDimensions', $scope.canGraph);
+    $scope.$watchCollection('checkedProperties', $scope.canGraph);
+    $scope.$watch('filters', $scope.canGraph);
+
+    $scope.clearGraph = function(event){
+      event.preventDefault();
+      $('#graph').empty().parent().hide();
+    };
+  });
+  </script>
+  <script>
+    $(function () {
+
+      $('#report').tablesorter({
+        widgets: ['filter']
+      })
+          .on('click', '.filter', function(event){
+            event.preventDefault();
+            return;
+            var link = $(this);
+
+            var value = link.text();
+            var dim = link.attr('data-dimension');
+            var query = encodeURIComponent(dim) + "=" + value.replace(/\s/g, '');
+
+            var s = window.location.search;
+            if( s.search(encodeURIComponent(dim) + '=') !== -1 ){
+              s = s.replace(new RegExp(encodeURIComponent(dim) + '=[^&]*'), query);
+            }else{
+              s += s.length ? '&' + query : '?' + query;
+            }
+
+            window.location = window.location.pathname + s;
+          });
+
+      var ranges = {
+        '今天': [moment(), moment()],
+        '昨天': [moment().subtract('days', 1), moment().subtract('days', 1)],
+        '最近 7 天': [moment().subtract('days', 6), moment()],
+        '最近 30 天': [moment().subtract('days', 29), moment()],
+        '本月': [moment().startOf('month'), moment().endOf('month')],
+        '上一月': [moment().subtract('month', 1).startOf('month'), moment().subtract('month', 1).endOf('month')]
+      };
+
+      var start_date = '{{ start_date|date:'Y-m-d' }}';
+      var end_date = '{{ end_date|date:'Y-m-d' }}';
+      var labelRanges = {
+        '今天': '$0~$0',
+        '昨天': '$-1~$-1',
+        '最近 7 天': '$-6~$0',
+        '最近 30 天': '$-30~$0',
+        '本月': '$thisMonth',
+        '上一月': '$lastMonth'
+      };
+
+      var widget = $('.filter-item .date-range').daterangepicker({
+        ranges: ranges,
+        startDate: start_date,
+        end_date: end_date,
+        format: 'YYYY-MM-DD'
+
+      }, function(start, end, label){
+        var widget = this;
+        var input = widget.element.find('input');
+        input.val(start.format('YYYY-MM-DD') + '~' + end.format('YYYY-MM-DD'));
+        var scope = angular.element('#report-form').scope();
+
+        scope.$apply(function(){
+          scope.filters[input.attr('name')] = [input.val()];
+          scope.dateRange = labelRanges[label];
+          scope.canGraph();
+        });
+
+        if ( label.toLowerCase() === 'custom range' ) {
+          this.element.find('.display').text(start.format('MM/DD') + ' - ' + end.format('MM/DD'));
+        }else {
+          this.element.find('.display').text(label);
+        }
+
+      });
+
+      var display_label = '';
+
+      for ( var label in ranges ) {
+        if ( ranges.hasOwnProperty(label) ) {
+          var range = ranges[label];
+
+          if ( range[0].format('YYYY-MM-DD') === start_date && range[1].format('YYYY-MM-DD') === end_date ) {
+            display_label = label;
+            var scope = angular.element('#report-form').scope();
+
+            scope.$apply(function () {
+              scope.dateRange = labelRanges[label];
+            });
+            break;
+          }
+        }
+      }
+
+      if ( !display_label ) {
+        display_label = start_date.substr(5, 5).replace('-', '/') + ' - ' + end_date.substr(5, 5).replace('-', '/');
+      }
+
+      widget.find('.display').text(display_label);
+    });
+
+
+  </script>
+  <script src="{{ STATIC_URL }}js/vendor/underscore-min.js"></script>
+  <script src="{{ STATIC_URL }}js/view.js?v=6"></script>
+{% endblock %}

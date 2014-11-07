@@ -1,0 +1,21 @@
+<li class="treeview {% if section == 'reports' %}active{% endif %}">
+  <a href="{% url 'my_reports' %}">
+    <i class="fa fa-bar-chart-o"></i>
+    <span>报表</span>
+    <i class="fa fa-angle-left pull-right"></i>
+  </a>
+
+  <ul class="treeview-menu">
+    <li>
+      <a href="{% url 'my_reports' %}">所有</a>
+    </li>
+
+    {% for group in groups %}
+      <li>
+        <a href="{% url 'my_reports' %}?group={{ group.id }}">{{ group.name }}
+          <span class="pull-right badge bg-green">{{ group.reports_count }}</span>
+        </a>
+      </li>
+    {% endfor %}
+  </ul>
+</li>

@@ -1,0 +1,46 @@
+{% if is_paginated %}
+  {% load i18n %}
+  <ul class="pagination pagination-sm no-margin">
+    {% if page_obj.has_previous %}
+      <li>
+        <a href="?page={{ page_obj.previous_page_number }}{{ getvars }}{{ hashtag }}" class="prev">&laquo;</a>
+      </li>
+    {% else %}
+      <li class="disabled">
+        <a href="#">&laquo;</a></li>
+    {% endif %}
+
+    {% for page in pages %}
+      {% if page %}
+        {% ifequal page page_obj.number %}
+          <li class="active">
+            <a href="?page={{ page }}{{ getvars }}{{ hashtag }}" class="page">{{ page }}</a>
+          </li>
+        {% else %}
+          <li>
+            <a href="?page={{ page }}{{ getvars }}{{ hashtag }}" class="page">{{ page }}</a>
+          </li>
+        {% endifequal %}
+      {% endif %}
+    {% endfor %}
+
+    {% if page_obj.has_next %}
+      <li>
+        <a href="?page={{ page_obj.next_page_number }}{{ getvars }}{{ hashtag }}">&raquo;</a>
+      </li>
+    {% else %}
+      <li class="disabled">
+        <a href="#">&raquo;</a>
+      </li>
+    {% endif %}
+
+    <li class="disabled">
+      <a href="">
+        第{{ page_obj.start_index }}~{{ page_obj.end_index }}个 / 总: {{ page_obj.paginator.count }}
+      </a>
+    </li>
+    <li>
+      <a href="?limit={{ page_obj.paginator.count }}{{ getvars }}{{ hashtag }}">显示全部</a>
+    </li>
+  </ul>
+{% endif %}

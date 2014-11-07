@@ -1,0 +1,177 @@
+{% load helper_tags %}
+{% load accout_tags %}
+{% load collection_tags %}
+{#<div class="user-panel">#}
+{#  <div class="pull-left image">#}
+{#    <img src="{{ STATIC_URL }}adminLTE/img/avatar3.png" class="img-circle" alt="User Image"/>#}
+{#  </div>#}
+{##}
+{#  <div class="pull-left info">#}
+{#    <p>{{ user }}</p>#}
+{#    <i class="fa fa-circle text-success"></i> 喵#}
+    {# <a href="#"><i class="fa fa-circle text-success"></i> Online</a>#}
+{#  </div>#}
+{#</div>#}
+
+<ul class="sidebar-menu">
+
+  <li {% if section == 'dashboard' %}class="active" {% endif %}>
+    <a href="/">
+      <i class="fa fa-dashboard"></i> <span>Dashboard</span>
+    </a>
+  </li>
+<!-- 收藏夹 -->
+  <li class="treeview {% if section == 'collection' %}active{% elif section == 'group_collection' %}active{% else %}active{% endif %}">
+    <a href="">
+      <i class="glyphicon glyphicon-star"></i>
+      <span>收藏夹</span>
+      <i class="fa fa-angle-left pull-right"></i>
+    </a>
+
+    <ul class="treeview-menu">
+      <!-- 列出没有组的collection or link -->
+      {% get_none_group_collection_list user as none_group_collections %}
+      {% for collection in none_group_collections %}
+        <li {% if section == 'collection' and tab == collection.id %}class='active'{% endif %}>
+          <a href="{% url 'collection_report' collection.id %}">
+          <i class="fa fa-lock "></i>
+          <span>{{ collection.name }}</span>
+        </a></li>
+      {% endfor %}
+      <!-- 列出组 和 组中的collection+link数 -->
+      {% for group in user.groups.all %}
+        <li {% if section == 'group_collection' and tab == group.id %}class='active'{% endif %}>
+          <a href="{% url 'list_group_collections' group.id %}">
+              <span>{{ group.name }}</span>
+            <span class="pull-right badge bg-green">{% count_collections_in_group group %}</span>
+          </a>
+        </li>
+      {% endfor %}
+
+    </ul>
+  </li>
+  {% get_sidebar_collections user as featured_collections %}
+  <ul class="treeview-menu">
+    {% for collection in featured_collections %}
+
+      <li {% if tab == collection.id %}class='active'{% endif %}>
+        <a href="{% url 'collection_report' collection.id %}">
+
+          {% if collection.group == None %}
+            <i class="fa fa-lock "></i><span>{{ collection.name }}</span>
+
+          {% else %}
+            <span>{{ collection.group.name }}/{{ collection.name }}</span>
+          {% endif %}
+
+        </a>
+      </li>
+    {% endfor %}
+  </ul>
+  </li>
+
+  {% render_group_reports_menu %}
+
+  {% if user.is_staff %}
+  <li class="treeview {% if section == 'data' %}active{% endif %}">
+    <a href="{% url 'databases' %}">
+      <i class="fa fa-building-o"></i>
+      <span>数据管理</span>
+      <i class="fa fa-angle-left pull-right"></i>
+    </a>
+    <ul class="treeview-menu">
+      <li {% if tab == 'externallink' %}class='active'{% endif %}>
+        <a href="{% url 'list_external_links' %}">
+          <span>外部链接管理</span></a>
+      </li>
+      <li {% if tab == 'database' %}class='active'{% endif %}>
+        <a href="{% url 'databases' %}"> 数据库管理</a>
+      </li>
+
+      <li {% if tab == 'views' %}class='active'{% endif %}>
+        <a href="{% url 'views' %}"> 报表管理 </a>
+      </li>
+
+      <li {% if tab == 'jobs' %}class='active'{% endif %}>
+        <a href="{% url 'manage_jobs' %}"> 导入程序管理 </a>
+      </li>
+
+      <li {% if tab == 'history' %}class='active'{% endif %}>
+        <a href="{% url 'import_history' %}">导入记录</a>
+      </li>
+
+      <li {% if tab == 'collection' %} class="active" {% endif %}>
+        <a href="{% url 'list_collection' %}">
+{#          <i class="glyphicon glyphicon-list-alt"></i>#}
+          <span>收藏夹管理</span>
+        </a>
+      </li>
+
+    </ul>
+  </li>
+
+    <li class="treeview {% if section == 'aggregate' %}active{% endif %}">
+      <a href="{% url 'databases' %}">
+        <i class="fa fa-cogs"></i>
+        <span>数据聚合</span>
+        <i class="fa fa-angle-left pull-right"></i>
+      </a>
+
+      <ul class="treeview-menu">
+        <li {% if tab == 'list' %}class='active'{% endif %}>
+          <a href="{% url 'aggregate_list' %}">聚合任务</a>
+        </li>
+        <li {% if tab == 'history' %}class='active'{% endif %}>
+          <a href="{% url 'aggregate_history' %}">聚合历史</a>
+        </li>
+      </ul>
+    </li>
+
+  <li class="treeview {% if section == 'account' %}active{% endif %}">
+    <a href="">
+      <i class="fa fa-user"></i>
+      <span> 用户与权限  </span>
+      <i class="fa fa-angle-left pull-right"></i>
+      {% new_group_requests_count %}
+    </a>
+    <ul class="treeview-menu">
+      <li {% if tab == 'users' %}class='active'{% endif %}>
+        <a href="{% url 'users' %}">用户管理</a>
+      </li>
+
+      <li {% if tab == 'group' %}class='active'{% endif %}>
+        <a href="{% url 'manage_group_req' %}" style="margin-right: 25px;">组申请管理
+          {% new_group_requests_count %}
+        </a>
+      </li>
+    </ul>
+  </li>
+
+{#  <li class="treeview {% if section == 'monitor' %}active{% endif %}">#}
+{#    <a href="">#}
+{#      <i class="fa fa-eye"></i>#}
+{#      <span> 实时监控  </span>#}
+{#      <i class="fa fa-angle-left pull-right"></i>#}
+{#    </a>#}
+{#  </li>#}
+{##}
+{#  <li class="treeview {% if section == 'alert' %}active{% endif %}">#}
+{#    <a href="">#}
+{#      <i class="fa fa-alert"></i>#}
+{#      <span> 报警事件 </span>#}
+{#      <i class="fa fa-angle-left pull-right"></i>#}
+{#    </a>#}
+{#  </li>#}
+  {% endif %}
+
+  {% if user.is_staff %}
+  <li>
+    <a href="/admin" target="_blank">
+      <i class="fa fa-cog"></i>
+      <span>后台管理</span>
+    </a>
+  </li>
+  {% endif %}
+
+</ul>
+

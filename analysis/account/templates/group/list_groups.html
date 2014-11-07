@@ -1,0 +1,49 @@
+{% extends 'base.html' %}
+{% load helper_tags %}
+{% load pagination_tags %}
+
+{% block title %} 组管理 {% endblock %}
+{% block content_header %} 组 {% endblock %}
+
+{% block sidebar %}
+{% include 'sidebar.html' with tab='user' %}
+{% endblock %}
+
+{% block content %}
+{% autopaginate groups %}
+
+
+<table class="table table-bordered">
+  <thead>
+  <tr>
+    <th>组名</th>
+    <th>操作</th>
+  </tr>
+  </thead>
+  <tbody>
+  {% for g in groups %}
+  <tr>
+    <td>{{ g.name}}</td>
+    <td>
+      <form action="{% url 'group' %}" method="post">{% csrf_token %}
+        <input type="hidden" name="group" value="{{g.name}}"/>
+        {% if g in request.user.groups.all %}
+        <button type="submit" class="btn btn-primary disabled btn-sm">已加入</button>
+        {% elif g in rej_groups %}
+        <label class="alert-danger">申请被拒绝</label>
+        <button type="submit" class="btn btn-primary btn-sm">重新申请</button>
+        {% elif g in req_groups %}
+        <button type="submit" class="btn btn-primary disabled btn-sm">已申请</button>
+        {% else %}
+        <button type="submit" class="btn btn-primary btn-sm">申请加入</button>
+        {% endif %}
+      </form>
+    </td>
+
+  </tr>
+  {% endfor %}
+
+  </tbody>
+</table>
+
+{% endblock %}

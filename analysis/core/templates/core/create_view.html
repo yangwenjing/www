@@ -1,0 +1,326 @@
+{% extends 'base.html' %}
+{% load helper_tags %}
+
+{% block title %} {% if not report %} 创建报表 {% else %} 修改报表 {% endif %} {% endblock %}
+{% block content_header %} {% if not report %} 创建报表 {% else %} 修改报表 {% endif %} {% endblock %}
+
+{% block sidebar %}
+  {% render_sidebar 'data.view' %}
+{% endblock %}
+
+{% block body_class %} create-view {% endblock %}
+
+{% block content %}
+
+  <div class="box box-primary">
+    <form class="form" method="post"
+          action="{{ request.path }}"
+          data-ng-app="sina" data-ng-controller="ViewController"
+        >
+
+      {% csrf_token %}
+
+      <div class="box-body">
+
+        <div class="form-group">
+          <label class="control-label" for="id_database">数据库:</label>
+          <select class="form-control" name="database"
+                  required
+                  ng-model="database"
+                  ng-change="fetchTable()"
+                  id="id_databases">
+
+            {% for db in form.fields.database.queryset.all %}
+              <option value="{{ db.id }}">{{ db }}</option>
+            {% endfor %}
+          </select>
+        </div>
+
+        {% verbatim %}
+
+        <div class="form-group">
+          <label class="control-label" for="id_table">表:</label>
+          <select id="id_table" class="form-control"
+                  required
+                  ng-model="table"
+                  ng-change="updateFields()"
+                  ng-options="table.name for table in tables">
+          </select>
+          <input type="hidden" name="table" value="{{ table.name }}"/>
+        </div>
+
+        <div class="form-group" ng-show="table.name">
+          <a class="btn btn-primary btn-xs" target="_blank"
+             ng-href="{{ sample_data_url }}?database={{ database }}&table={{ table.name }}">查看数据</a>
+        </div>
+
+        <div class="form-group">
+          <label class="control-label" for="id_name">报表名字:</label>
+          <input class="form-control" type="text"
+                 name="name" id="id_name"
+                 required ng-model="name"
+              />
+        </div>
+
+        <fieldset>
+          <legend>字段列表</legend>
+
+          <div ng-show="fields" class="row form-group">
+            <div class="col-sm-2"> 字段名称  </div>
+            <div class="col-sm-2"> 数据库字段 </div>
+            <div class="col-sm-3"> 字段类型 </div>
+            <div class="col-sm-2"> 数据类型 </div>
+          </div>
+
+          <div class="field-list" ui-sortable ng-model="fields">
+
+          <div class="row form-group field-line" ng-repeat="field in fields">
+            <div class="col-sm-2">
+              <input class="form-control input-sm"  type="text"
+                     ng-disabled="field.type == 'ignore'"
+                     name="field_{{ $index }}_display" ng-model="field.display" />
+            </div>
+
+            <div class="col-sm-2">
+              <select class="form-control input-sm"
+                      ng-options="f.name as f.name for f in table.fields"
+                      ng-model="field.source"
+                      ng-hide="field.source == '$'"
+                      ng-disabled="field.type == 'ignore'"
+                  >
+              </select>
+
+              <input type="hidden" name="field_{{ $index }}_source" ng-value="field.source"/>
+              <span ng-show="field.source == '$'"> 虚拟字段 </span>
+            </div>
+
+            <div class="col-sm-3">
+              <div ng-hide="field.source == '$'">
+                <label>
+                  <input type="radio" name="field_{{ $index }}_type"
+                         value='dimension'
+                         ng-model="field.type" class="minimal" /> 维度
+                </label>
+                &nbsp;&nbsp;
+
+                <label>
+                  <input type="radio" name="field_{{ $index }}_type"
+                         value='property'
+                         ng-model="field.type" class="minimal" /> 指标
+                </label>
+                &nbsp;&nbsp;
+
+                <label>
+                  <input type="radio" name="field_{{ $index }}_type"
+                         value='ignore'
+                         ng-model="field.type" class="minimal" /> 忽略
+                </label>
+              </div>
+
+              <div ng-show="field.source == '$'">
+                <input type="text" name="field_{{ $index }}_expression"
+                       class="form-control input-sm"
+                       ng-model="field.expression"
+                       placeholder="表达式: size * 1024 / time" />
+              </div>
+            </div>
+
+            <div class="col-sm-2">
+              <select name="field_{{ $index }}_data_type"
+                      ng-if="field.type == 'dimension'"
+                      ng-required="field.type == 'dimension'"
+                      ng-model="field.data_type">
+
+                <option value="char">字符串</option>
+                <option value="datetime">日期和时间</option>
+                <option value="date">日期 (不包含时间)</option>
+                <option value="time">时间 (不包含日期)</option>
+                <option value="province">省份</option>
+              </select>
+
+              <select name="field_{{ $index }}_data_type"
+                      ng-if="field.type == 'property'"
+                      ng-required="field.type == 'property'"
+                      ng-model="field.data_type">
+
+                <option value="number">数字</option>
+                <option value="percent">百分比</option>
+              </select>
+
+              <!--
+              <input type="text" placeholder="单位" ng-if="field.date_type == 'number'"/>
+              -->
+
+            </div>
+
+            <div class="col-sm-1">
+              <a> <i class="fa fa-arrows"></i> </a>
+              &nbsp;
+              <a href="" ng-click="fields.splice($index, 1)" title="删除字段">
+                <i class="text-danger fa fa-trash-o"></i></a>
+            </div>
+          </div>
+          </div>
+
+          <input type="hidden" name="field_count" ng-value="fields.length" />
+
+          <a class="btn btn-primary btn-xs" ng-click="addField()">
+            <i class="fa fa-plus"></i> 虚拟字段
+          </a>
+        </fieldset>
+        {% endverbatim %}
+      </div>
+
+      <div class="box-footer">
+        <button class="btn btn-primary">保存</button>
+      </div>
+    </form>
+  </div>
+
+{% endblock %}
+
+{% block extra_body %}
+  <script src="{{ STATIC_URL }}js/angular.ui.sortable.js"></script>
+  <script>
+  var app = angular.module('sina', ['ui.sortable']);
+
+  app.controller('ViewController', function($scope, $http){
+    $scope.sample_data_url = "{% url 'get_sample_data' %}";
+
+    /* 查询数据库的所有表格名字 */
+    $scope.fetchTable = function(callback){
+      var db = $scope.database;
+      if ( !db ) {
+        return;
+      }
+
+      $http.get('{% url "query_tables" %}?database=' + db).
+          success(function(tables, status){
+            $scope.tables = tables;
+            if (callback) {
+              callback();
+            }
+
+          });
+    };
+
+    // 添加一个虚拟字段
+    $scope.addField = function(){
+      $scope.fields.push({
+        display: '',
+        type: 'property',
+        source: '$',
+        data_type: 'number'
+      })
+    };
+
+    function guessField(field) {
+      var displays = {
+        isp: '运营商',
+        province: '省份',
+        sip: '服务器',
+        server: '服务器',
+        cluster: '集群',
+        requests: '请求数',
+        hits: '命中',
+        time: '时间',
+        duration: '时长',
+        size: '大小',
+        date: '日期',
+        traffic: '流量'
+      };
+
+      var result = {
+        display: displays[field.name] || field.name,
+        source: field.name,
+        type: 'ignore',
+        data_type: 'number',
+        expression: ''
+      };
+
+      if (field.name === 'id') {
+        result['type'] = 'ignore';
+
+      } else if (/int/.test(field.type)) {
+        result['type'] = 'property';
+
+      } else {
+        result.type = 'dimension';
+        result.data_type = 'char';
+
+        if (field.type === 'date') {
+          result.data_type = 'date';
+        } else if (field.type === 'time') {
+          result.data_type = 'time';
+        } else if (field.type === 'datetime') {
+          result.data_type = 'datetime';
+        } else if (field.name === 'province') {
+          result.data_type = 'province';
+        }
+      }
+
+      return result;
+    };
+
+    $scope.updateFields = function(callback){
+      if ( !$scope.table ) {
+        return;
+      }
+
+      if ( callback ) {
+        callback();
+
+      } else {
+        $scope.fields = $scope.table.fields.map(function(field){
+          return guessField(field);
+        });
+
+      }
+    };
+
+    {% if report %}
+      // 如果是编辑视图，则初始化一部分数据
+      $scope.database = {{ report.database_id }};
+      $scope.name = '{{ report.name }}';
+      $scope.fields = [];
+
+      {% for field in report.fields.all %}
+        $scope.fields.push({
+          display: '{{ field.display }}',
+          source: '{{ field.source }}',
+          type: '{{ field.type_string }}',
+          data_type: '{{ field.data_type }}',
+          expression: '{{ field.expression }}'
+        });
+      {% endfor %}
+
+      $scope.fetchTable(function(){
+        var tables = $scope.tables;
+        for( var i in tables){
+          if (tables[i].name === '{{ report.table }}') {
+            $scope.table = tables[i];
+
+            var exiting = $scope.fields.map(function(f){
+              return f.source;
+            });
+
+            $scope.table.fields.map(function(field){
+              if ( exiting.indexOf(field.name) === -1 ) {
+                var f = guessField(field);
+                f.type = 'ignore';
+                $scope.fields.push(f);
+              }
+            });
+            break;
+          }
+        }
+      });
+
+    {% elif form.initial.database %}
+      $scope.database = {{ form.initial.database }};
+      $scope.fetchTable();
+
+    {% endif %}
+  });
+  </script>
+{% endblock %}

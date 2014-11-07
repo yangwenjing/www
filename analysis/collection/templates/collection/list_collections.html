@@ -1,0 +1,119 @@
+{% extends 'base.html' %}
+{% load helper_tags %}
+{% load pagination_tags %}
+
+{% block title %} 收藏夹管理 {% endblock %}
+{% block content_header %} 收藏夹 {% endblock %}
+
+{% block sidebar %}
+{% render_sidebar 'data.collection' %}
+{% endblock %}
+
+{% block content %}
+{% autopaginate collections %}
+
+<table class="table table-bordered">
+  <caption>收藏夹</caption>
+  <thead>
+  <tr>
+    <th>名称</th>
+    <th>创建时间</th>
+    <th>操作</th>
+  </tr>
+  </thead>
+  <tbody>
+  {% for collection in collections %}
+    <tr>
+      <td>
+        <a href="{{ collection.get_absolute_url }}">
+
+          {% if collection.group == None %}
+             <span>{{ collection.name }}</span> <i class="fa fa-lock pull-right"></i>
+
+          {% else %}
+            <span>{{ collection.group.name }}/{{ collection.name }}</span>
+          {% endif %}
+
+        </a>
+      </td>
+
+      <td>{{ collection.create_at|date:'Y/m/d H:i' }}</td>
+      <td>
+{#        <div class="btn-group btn-group-xs">#}
+{#          <a title="推荐"#}
+{#             class="post-link btn btn-default"#}
+{#             href="{% url 'feature_collection' collection.id %}"#}
+{#              {% if collection.is_featured %}#}
+{#             data-confirm="取消推荐此收藏夹？"#}
+{#              {% else %}#}
+{#             data-confirm="确定推荐此收藏夹？"#}
+{#              {% endif %}>#}
+{#            {% if collection.is_featured %}#}
+{#            <i class="glyphicon glyphicon-star text-yellow"></i>#}
+{#            {% else %}#}
+{#            <i class="glyphicon glyphicon-star-empty"></i>#}
+{#            {% endif %}#}
+{##}
+{#          </a>#}
+          <a class="post-link btn btn-sm btn-danger" href="{% url 'delete_collection' collection.id %}"
+            data-confirm="删除收藏夹后，收藏夹内的报表也会被删除。确定删除？" title="删除收藏夹">
+            <i class="fa fa-trash-o"></i>
+          </a>
+{#        </div>#}
+      </td>
+    </tr>
+  {% endfor %}
+  </tbody>
+</table>
+{% paginate %}
+
+<p>
+  <a class="btn btn-primary" href="#create-collection" data-toggle="modal">创建收藏夹</a>
+</p>
+
+
+<div class="modal fade" id="create-collection">
+  <div class="modal-dialog">
+    <div class="modal-content">
+
+      <form action="{% url 'create_collection' %}" method="post" name="collectionForm">
+        {% csrf_token %}
+
+        <div class="modal-header">
+          <button type="button" class="close" data-dismiss="modal"><span aria-hidden="true">&times;</span>
+            <span class="sr-only">Close</span></button>
+
+          <h4 class="modal-title">创建收藏夹</h4>
+        </div>
+
+        <div class="modal-body">
+          <input type="hidden" name="creator" value="{{ user.id }}"/>
+          <div class="form-group">
+            <label class="control-label" for="id_name">收藏夹名称：</label>
+            <input class="form-control" type="text" name="name" placeholder="名称,名称不能为Dashboard" required/>
+          </div>
+
+          <div class="form-group">
+            <label class="control-label" for="id_group">属于：</label>
+            <select name="group" id="id_group" class="form-control">
+              <option value="">私有</option>
+              <optgroup label="组">
+                {% for group in user_groups %}
+                  <option value="{{ group.id }}">{{ group.name }}</option>
+                {% endfor %}
+              </optgroup>
+            </select>
+          </div>
+
+        </div>
+
+        <div class="modal-footer">
+          <button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
+          <button class="btn btn-primary" ng-disabled="collectionForm.$invalid">Save</button>
+        </div>
+      </form>
+
+    </div>
+  </div>
+</div>
+{% endblock %}

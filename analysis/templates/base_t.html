@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <link rel="stylesheet" href="{{ STATIC_URL }}bootstrap/css/bootstrap.css"/>
+  <link rel="stylesheet" href="{{ STATIC_URL }}adminLTE/css/AdminLTE.css"/>
+  <link rel="stylesheet" href="{{ STATIC_URL }}adminLTE/css/font-awesome.min.css"/>
+
+  <title>{% block title %}  {% endblock %} - Sina Analytics</title>
+  {% block extra_head %} {% endblock %}
+</head>
+<body class="skin-black">
+
+    <!-- Main content -->
+    <section class="content">
+
+      {% for message in messages %}
+        <div
+            class="alert alert-dismissable alert-{% if message.tags == 'error' %}danger{% else %}{{ message.tags }}{% endif %}">
+          <button type="button" class="close" data-dismiss="alert" aria-hidden="true">&times;</button>
+          <strong> {{ message }} </strong>
+        </div>
+      {% endfor %}
+
+      {% block content %}  {% endblock %}
+
+    </section>
+
+
+<script src="{{ STATIC_URL }}js/jquery-2.1.1.min.js"></script>
+<script src="{{ STATIC_URL }}bootstrap/js/bootstrap.min.js"></script>
+</body>
+</html>

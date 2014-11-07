@@ -1,0 +1,9 @@
+Django==1.6.5
+South==1.0
+wsgiref==0.1.2
+MySQL-python==1.2.5
+django-pagination==1.0.7
+requests==2.3.0
+gunicorn==19.1.0
+gevent==1.0.1
+#gevent==1.0.1

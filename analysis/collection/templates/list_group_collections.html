@@ -1,0 +1,62 @@
+{% extends 'base.html' %}
+{% load helper_tags %}
+{% load pagination_tags %}
+
+{% block title %} {{ group.name }} 的收藏夹 {% endblock %}
+{% block content_header %} 组-{{ group.name }} 的收藏夹  {% endblock %}
+
+{% block sidebar %}
+{% include "sidebar.html" with section='group_collection' tab=group.id %}
+{% endblock %}
+
+{% block content %}
+{% autopaginate collections %}
+
+<table class="table table-bordered">
+  <thead>
+  <tr>
+    <th>名称</th>
+    <th>创建时间</th>
+  </tr>
+  </thead>
+  <tbody>
+  {% for collection in collections %}
+    <tr>
+      <td>
+        <a href="{% url 'collection_report' collection.id %}">
+
+          {% if collection.group == None %}
+             <span>{{ collection.name }}</span> <i class="fa fa-lock pull-right"></i>
+
+          {% else %}
+            <span>{{ collection.group.name }}/{{ collection.name }}</span>
+          {% endif %}
+
+        </a>
+      </td>
+
+      <td>{{ collection.create_at|date:'Y/m/d H:i' }}</td>
+    </tr>
+  {% endfor %}
+  {% for link in links %}
+    <tr>
+      <td>
+        <a href="{% url 'show_link' link.id %}">
+
+          {% if link.group == None %}
+             <span>{{ collection.name }}</span> <i class="fa fa-lock pull-right"></i>
+          {% else %}
+            <span>{{ link.group.name }}/{{ link.name }}</span>
+          {% endif %}
+
+        </a>
+      </td>
+
+      <td>{{ link.created_at|date:'Y/m/d H:i' }}</td>
+    </tr>
+  {% endfor %}
+  </tbody>
+</table>
+{% paginate %}
+
+{% endblock %}
