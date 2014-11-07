@@ -1,9 +1,9 @@
-## 新浪数据分析平台
+﻿## 数据分析平台
 
 ### SETUP
 
 ```sh
-$ git clone ssh://git@10.77.121.137:8022/sinacantcode/analysis.git
+$ git clone git@github.com:yangwenjing/www.git
 $ cd analysis
 $ pip install -r requirements.txt
 $ ./manage.py syncdb
